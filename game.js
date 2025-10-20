@@ -1,6 +1,29 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
+const levelMenu = document.getElementById("levelMenu");
+const nextLevelBtn = document.getElementById("nextLevelBtn");
+const retryLevelBtn = document.getElementById("retryLevelBtn");
+
+let currentLevel = 1;
+let levelCompleted = false;
+
+nextLevelBtn.addEventListener("click", () => {
+    levelMenu.style.display = "none";   // hide menu
+    currentLevel++;
+    loadLevel(currentLevel).then(() => {
+        levelCompleted = false;
+    });
+});
+
+retryLevelBtn.addEventListener("click", () => {
+    levelMenu.style.display = "none";   // hide menu
+    loadLevel(currentLevel).then(() => {
+        levelCompleted = false;
+    });
+});
+
+
 const keys = {};
 document.addEventListener("keydown", e => keys[e.code] = true);
 document.addEventListener("keyup", e => keys[e.code] = false);
@@ -74,6 +97,7 @@ function resolveCollisionWithBounds(player, canvas) {
 }
 
 function update() {
+  if (!levelCompleted) {
   // Player movement
   if (keys["ArrowLeft"]) player.x -= 3;
   if (keys["ArrowRight"]) player.x += 3;
@@ -94,10 +118,10 @@ for (let p of platforms){
 resolveCollisionWithBounds(player,canvas);
 
   // Exit check
-  if (checkCollision(player, exit)) {
-    alert("Level Complete!");
-    // For now, reload same level
-    loadLevel(1);
+  if (!levelCompleted && checkCollision(player, exit)) {
+    levelCompleted = true;
+    levelMenu.style.display = "block";  // show the menu
+    }
   }
 }
 
@@ -123,5 +147,5 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-// Load first level and start game
-loadLevel(1).then(loop);
+// Load current level and start game
+loadLevel(currentLevel).then(loop);
