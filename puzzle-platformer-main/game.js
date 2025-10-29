@@ -7,11 +7,21 @@ const startBtn = document.getElementById("startBtn");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 
 let gameStarted = false;
+// === SOUNDTRACK ===
+const backgroundMusic = new Audio("sounds/undertale.mp3");
+backgroundMusic.loop = true;   
+backgroundMusic.volume = 0.1;  
+// === SOUND EFFECTS ===
+const jumpSound = new Audio("sounds/jumpSound.mp3");
+jumpSound.volume = 0.7;  
 
 function startGame() {
   if (gameStarted) return; // evită restartul
   gameStarted = true;
-  startMenu.style.display = "none";
+  startMenu.style.display = "none";  
+   backgroundMusic.play().catch(err => {
+    console.log("Autoplay blocked:", err);
+   });
   loadLevel(currentLevel).then(() => {
     requestAnimationFrame(loop); // pornește bucla de joc
   });
@@ -48,6 +58,10 @@ const retryLevelBtn = document.getElementById("retryLevelBtn");
 
 let currentLevel = 1;
 let levelCompleted = false;
+let jumpCooldown = 0;    // cooldown după săritură (în frame-uri)
+let landCooldown = 0;      // cooldown după aterizare (în frame-uri)
+let prevGrounded = false;  // grounded în frame-ul anterior
+let prevSpace = false;     // pentru edge-press la Space
 
 nextLevelBtn.addEventListener("click", () => {
     levelMenu.style.display = "none";   // hide menu
@@ -74,11 +88,32 @@ const gravity = 0.6;
 let player = {
   x: 50,
   y: 350,
-  w: 32,
-  h: 32,
+  w: 68,
+  h: 68,
   vy: 0,
   grounded: false
 };
+ 
+// === SPRITE-URI PLAYER ===
+const playerSprites = {
+  idle: new Image(),
+  jump: new Image(),
+  walkA: new Image(),
+  walkB: new Image(),
+}; 
+playerSprites.idle.src  = "assets/slime_front.png";
+playerSprites.jump.src  = "assets/slime_jump.png";
+playerSprites.walkA.src = "assets/slime_walk_a.png";
+playerSprites.walkB.src = "assets/slime_walk_b.png";
+
+// stare animație
+let playerState = "idle";   // "idle" | "walk" | "jump"
+let facingRight = true;     // pentru flip stânga/dreapta
+let walkFrame = 0;          // 0 = walkA, 1 = walkB
+let walkTimer = 0;
+const WALK_FRAME_DELAY = 10; // schimbă între A/B la fiecare ~10 frame-uri
+
+
 
 let platforms = [];
 let exit = {};
@@ -153,40 +188,109 @@ function resolveCollisionWithBounds(player, canvas) {
 }
 
 function update() {
-  if (!levelCompleted) {
-  // Player movement
-  if (keys["ArrowLeft"]) player.x -= 3;
-  if (keys["ArrowRight"]) player.x += 3;
-  if (keys["Space"] && player.grounded) {
+  if (levelCompleted) return;
+
+  // ===== Mișcare stânga / dreapta =====
+  if (keys["ArrowLeft"])  { player.x -= 3; facingRight = false; }
+  if (keys["ArrowRight"]) { player.x += 3; facingRight = true;  }
+
+  // ===== Cooldown săritură =====
+  if (jumpCooldown > 0) jumpCooldown--;
+
+  // ===== Săritură =====
+  if (keys["Space"] && player.grounded && jumpCooldown === 0) {
     player.vy = -12;
     player.grounded = false;
-  }
+    jumpCooldown = 15;
 
-  // Gravity
-  player.vy += gravity;
-  player.y += player.vy;
-  player.grounded = false;
-
-  // Platform collisions
-for (let p of platforms){
-  resolveCollision(player, p);
-}
-resolveCollisionWithBounds(player,canvas);
-
-  // Exit check
-  if (!levelCompleted && checkCollision(player, exit)) {
-    levelCompleted = true;
-    levelMenu.style.display = "block";  // show the menu
+    if (typeof jumpSound !== "undefined") {
+      jumpSound.currentTime = 0;
+      jumpSound.play();
     }
   }
+
+  // ===== Gravitație =====
+  player.vy += gravity;
+  player.y  += player.vy;
+
+  // înainte de coliziuni presupunem că e în aer;
+  // coliziunile vor seta grounded = true dacă atinge ceva
+  player.grounded = false;
+
+  // ===== Coliziuni platforme =====
+  for (let p of platforms) {
+    resolveCollision(player, p);
+  }
+
+  // ===== Coliziuni margini ecran =====
+  resolveCollisionWithBounds(player, canvas);
+
+  // ===== Stare animație (după coliziuni ca să știm grounded corect) =====
+  if (!player.grounded) {
+    playerState = "jump";
+    walkFrame = 0; 
+    walkTimer = 0;
+  } else if (keys["ArrowLeft"] || keys["ArrowRight"]) {
+    playerState = "walk";
+  } else {
+    playerState = "idle";
+    walkFrame = 0; 
+    walkTimer = 0;
+  }
+
+  // ===== Alternare cadre (walkA ↔ walkB) =====
+  if (playerState === "walk" && player.grounded) {
+    walkTimer++;
+    if (walkTimer >= WALK_FRAME_DELAY) {
+      walkTimer = 0;
+      walkFrame = 1 - walkFrame; // 0 -> 1 -> 0 ...
+    }
+  }
+
+  // ===== Verificare ieșire din nivel =====
+  if (checkCollision(player, exit)) {
+    levelCompleted = true;
+    levelMenu.style.display = "block";
+  }
 }
+
+
+
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Draw player
+  
+ // ===== Desenăm playerul cu sprite + flip stânga/dreapta =====
+let sprite;
+if (playerState === "jump") {
+  sprite = playerSprites.jump;
+} else if (playerState === "walk") {
+  sprite = (walkFrame === 0) ? playerSprites.walkA : playerSprites.walkB;
+} else {
+  sprite = playerSprites.idle;
+}
+
+if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+  ctx.save();
+
+  if (!facingRight) {
+    // Flip orizontal în jurul centrului playerului
+    ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
+    ctx.scale(-1, 1);
+    ctx.drawImage(sprite, -player.w / 2, -player.h / 2, player.w, player.h);
+  } else {
+    // Fără flip — desen normal
+    ctx.drawImage(sprite, player.x, player.y, player.w, player.h);
+  }
+
+  ctx.restore();
+} else {
+  // Fallback — dacă imaginea nu s-a încărcat încă
   ctx.fillStyle = "lime";
   ctx.fillRect(player.x, player.y, player.w, player.h);
+}
+
 
   // Draw platforms
   ctx.fillStyle = "gray";
