@@ -94,6 +94,10 @@ let player = {
   grounded: false
 };
  
+const imgGrass = new Image();
+imgGrass.src = "assets/grass.png";  
+
+
 // === SPRITE-URI PLAYER ===
 const playerSprites = {
   idle: new Image(),
@@ -125,20 +129,28 @@ async function loadLevel(num = 1) {
   player.y = data.playerStart.y;
   platforms = data.platforms;
   exit = data.exit;
-  // === Centrăm nivelul pe ecran ===
-const levelWidth = Math.max(...platforms.map(p => p.x + p.w), exit.x + exit.w);
+  
+
+const levelWidth  = Math.max(...platforms.map(p => p.x + p.w), exit.x + exit.w);
 const levelHeight = Math.max(...platforms.map(p => p.y + p.h), exit.y + exit.h);
-
-// Calculăm offsetul de centrare
-const offsetX = (canvas.width - levelWidth) / 2;
-const offsetY = (canvas.height - levelHeight) / 2;
-
-// Aplicăm offset pentru toate obiectele
+const offsetX = 0;
+const offsetY = Math.max(0, (canvas.height - levelHeight) / 2);
 player.x += offsetX;
 player.y += offsetY;
 platforms.forEach(p => { p.x += offsetX; p.y += offsetY; });
 exit.x += offsetX;
 exit.y += offsetY;
+
+
+let floor = platforms.reduce((a, b) => (a.w > b.w ? a : b)); 
+floor.x = 0;
+floor.w = canvas.width;
+floor.h = 40;
+floor.y = canvas.height - floor.h;
+
+
+player.x = 30;
+player.y = floor.y - player.h - 1;
 
 }
 
