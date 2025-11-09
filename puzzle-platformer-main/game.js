@@ -91,7 +91,11 @@ let player = {
   w: 68,
   h: 68,
   vy: 0,
-  grounded: false
+  grounded: false,
+  ledgeGrabbed: false,
+  ledgeX: 0,
+  ledgeY: 0,
+  ledgeSide: null // "left" or "right"
 };
  
 const imgGrass = new Image();
@@ -104,11 +108,13 @@ const playerSprites = {
   jump: new Image(),
   walkA: new Image(),
   walkB: new Image(),
+  ledgegrab: new Image(),
 }; 
 playerSprites.idle.src  = "assets/slime_front.png";
 playerSprites.jump.src  = "assets/slime_jump.png";
 playerSprites.walkA.src = "assets/slime_walk_a.png";
 playerSprites.walkB.src = "assets/slime_walk_b.png";
+playerSprites.ledgegrab.src = "assets/slime_ledge.png";
 
 // stare animație
 let playerState = "idle";   // "idle" | "walk" | "jump"
@@ -202,6 +208,39 @@ function resolveCollisionWithBounds(player, canvas) {
 function update() {
   if (levelCompleted) return;
 
+// ===== Handle ledge grabbing state =====
+if (player.ledgeGrabbed) {
+  // Lock player position
+  player.x = player.ledgeX;
+  player.y = player.ledgeY;
+  player.vy = 0;
+
+  // Determine if player is still pressing toward the ledge
+  let stillHolding =
+    (player.ledgeSide === "left" && keys["ArrowRight"]) ||
+    (player.ledgeSide === "right" && keys["ArrowLeft"]);
+
+  // Release conditions
+  if (!stillHolding) {
+    player.ledgeGrabbed = false;
+    player.ledgeSide = null;
+  }
+
+  // Climb or drop
+  if (keys["ArrowUp"] || keys["Space"]) {
+    player.ledgeGrabbed = false;
+    player.ledgeSide = null;
+    player.vy = -10; // jump upward
+  } else if (keys["ArrowDown"]) {
+    player.ledgeGrabbed = false;
+    player.ledgeSide = null; // drop down
+  }
+
+  // Skip normal movement while hanging
+  return;
+}
+
+
   // ===== Mișcare stânga / dreapta =====
   if (keys["ArrowLeft"])  { player.x -= 3; facingRight = false; }
   if (keys["ArrowRight"]) { player.x += 3; facingRight = true;  }
@@ -236,6 +275,43 @@ function update() {
 
   // ===== Coliziuni margini ecran =====
   resolveCollisionWithBounds(player, canvas);
+
+// ===== Check for ledge grab =====
+if (!player.grounded && !player.ledgeGrabbed && player.vy > 0) {
+  for (let p of platforms) {
+    // Check proximity to edges
+    const nearLeftEdge = Math.abs((player.x + player.w) - p.x) < 10;
+    const nearRightEdge = Math.abs(player.x - (p.x + p.w)) < 10;
+    const playerHandsY = player.y + player.h * 0.7;         //70% din varful platformei
+    const handsAtEdgeHeight = playerHandsY > p.y && playerHandsY < p.y + 40;
+
+    const pressingLeft = keys["ArrowLeft"];
+    const pressingRight = keys["ArrowRight"];
+
+    if (handsAtEdgeHeight) {
+      if (nearLeftEdge && pressingRight) {
+        // Grab left edge
+        player.ledgeGrabbed = true;
+        player.ledgeSide = "left";
+        player.ledgeX = p.x - player.w + 2;
+        player.ledgeY = p.y - player.h + 50;
+        player.vy = 0;
+        break;
+      }
+      if (nearRightEdge && pressingLeft) {
+        // Grab right edge
+        player.ledgeGrabbed = true;
+        player.ledgeSide = "right";
+        player.ledgeX = p.x + p.w - 2;
+        player.ledgeY = p.y - player.h + 50;
+        player.vy = 0;
+        break;
+      }
+    }
+  }
+}
+
+
 
   // ===== Stare animație (după coliziuni ca să știm grounded corect) =====
   if (!player.grounded) {
@@ -275,7 +351,10 @@ function draw() {
   
  // ===== Desenăm playerul cu sprite + flip stânga/dreapta =====
 let sprite;
-if (playerState === "jump") {
+  if (player.ledgeGrabbed) {
+    // dacă e atârnat, folosește sprite special (sau fallback)
+    sprite = playerSprites.ledge || playerSprites.idle;
+} else if (playerState === "jump") {
   sprite = playerSprites.jump;
 } else if (playerState === "walk") {
   sprite = (walkFrame === 0) ? playerSprites.walkA : playerSprites.walkB;
@@ -299,7 +378,7 @@ if (sprite && sprite.complete && sprite.naturalWidth > 0) {
   ctx.restore();
 } else {
   // Fallback — dacă imaginea nu s-a încărcat încă
-  ctx.fillStyle = "lime";
+  ctx.fillStyle = player.ledgeGrabbed ? "orange" : "lime";
   ctx.fillRect(player.x, player.y, player.w, player.h);
 }
 
