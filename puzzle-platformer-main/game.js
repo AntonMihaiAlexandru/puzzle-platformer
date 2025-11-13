@@ -1,6 +1,7 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
+
 // === MENIU DE START ===
 const startMenu = document.getElementById("startMenu");
 const startBtn = document.getElementById("startBtn");
@@ -108,13 +109,15 @@ const playerSprites = {
   jump: new Image(),
   walkA: new Image(),
   walkB: new Image(),
-  ledgegrab: new Image(),
+  ledge_grab: new Image(),
 }; 
+
+
 playerSprites.idle.src  = "assets/slime_front.png";
 playerSprites.jump.src  = "assets/slime_jump.png";
 playerSprites.walkA.src = "assets/slime_walk_a.png";
 playerSprites.walkB.src = "assets/slime_walk_b.png";
-playerSprites.ledgegrab.src = "assets/slime_ledge.png";
+playerSprites.ledge_grab.src = "assets/ledge_grab.png";
 
 // stare animație
 let playerState = "idle";   // "idle" | "walk" | "jump"
@@ -353,7 +356,7 @@ function draw() {
 let sprite;
   if (player.ledgeGrabbed) {
     // dacă e atârnat, folosește sprite special (sau fallback)
-    sprite = playerSprites.ledge || playerSprites.idle;
+    sprite = playerSprites.ledge_grab || playerSprites.idle;
 } else if (playerState === "jump") {
   sprite = playerSprites.jump;
 } else if (playerState === "walk") {
@@ -363,24 +366,39 @@ let sprite;
 }
 
 if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-  ctx.save();
+    ctx.save();
 
-  if (!facingRight) {
-    // Flip orizontal în jurul centrului playerului
-    ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
-    ctx.scale(-1, 1);
-    ctx.drawImage(sprite, -player.w / 2, -player.h / 2, player.w, player.h);
-  } else {
-    // Fără flip — desen normal
-    ctx.drawImage(sprite, player.x, player.y, player.w, player.h);
-  }
+    // Dacă avem ledge_grab → mărim sprite-ul
+    let scale = player.ledgeGrabbed ? 1.0 : 1.0;  // schimbă 1.3 cât vrei
 
-  ctx.restore();
-} else {
-  // Fallback — dacă imaginea nu s-a încărcat încă
-  ctx.fillStyle = player.ledgeGrabbed ? "orange" : "lime";
-  ctx.fillRect(player.x, player.y, player.w, player.h);
+    let w = player.w * scale;
+    let h = player.h * scale;
+
+    if (!facingRight) {
+        ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
+        ctx.scale(-1, 1);
+
+        ctx.drawImage(
+            sprite,
+            -w / 2,
+            -h / 2,
+            w,
+            h
+        );
+
+    } else {
+        ctx.drawImage(
+            sprite,
+            player.x - (w - player.w) / 2,
+            player.y - (h - player.h) / 2,
+            w,
+            h
+        );
+    }
+
+    ctx.restore();
 }
+
 
 
   // Draw platforms
