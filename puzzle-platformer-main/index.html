@@ -23,14 +23,17 @@
     <small style="opacity:.8;">Poți apăsa și <strong>Space</strong> sau <strong>Enter</strong> pentru a începe</small>
   </div>
 
+  <!-- === MENIU DE COMPLETARE A NIVELULUI === -->
   <div id="levelMenu" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
                           background-color: rgba(0,0,0,0.8); color:white; padding:20px; text-align:center;
                           border-radius:10px;">
     <h2>Level Complete!</h2>
     <button id="nextLevelBtn">Next Level</button>
     <button id="retryLevelBtn">Retry</button>
-</div>
+  </div>
+
+  <!-- === CANVAS-UL JOCULUI === -->
   <canvas id="game" width="800" height="480"></canvas>
-  <script src="game.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
