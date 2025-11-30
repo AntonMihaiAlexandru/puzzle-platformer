@@ -6,6 +6,8 @@ import { isKeyDown } from "./engine/input.js";
 import { resolveCollision, resolveCollisionWithBounds, gravity, checkCollision } from "./engine/physics.js";
 import { playSound } from "./engine/sound.js";
 import { camera, updateCamera } from "./engine/camera.js";
+import { updateEcho, drawEcho, echo, resetEcho } from "./entities/echo.js";
+import { playerEchoCollision } from "./entities/collisions.js";
 
 // ==== GLOBALS ====
 const canvas = document.getElementById("game");
@@ -46,6 +48,8 @@ async function startGame() {
 
     player.x = levelData.playerSpawn.x;
     player.y = levelData.playerSpawn.y;
+    player.history = [];
+    resetEcho(levelData.playerSpawn);
 
     updateCamera(player, canvas);
     
@@ -72,9 +76,13 @@ document.addEventListener("keydown", e => {
 // For next level
 nextLevelBtn.addEventListener("click", async () => {
     levelMenu.style.display = "none";
-    const spawn = await nextLevel();
-    player.x = spawn.x;
-    player.y = spawn.y;
+    const levelData = await nextLevel();   // rename to levelData
+    player.x = levelData.playerSpawn.x;
+    player.y = levelData.playerSpawn.y;
+
+    // Reset player history and echo
+    player.history = [];
+    resetEcho(levelData.playerSpawn);
 
     platforms = getPlatforms();
     exit = getExit();
@@ -84,9 +92,13 @@ nextLevelBtn.addEventListener("click", async () => {
 // For retry
 retryLevelBtn.addEventListener("click", async () => {
     levelMenu.style.display = "none";
-    const spawn = await retryLevel();
-    player.x = spawn.x;
-    player.y = spawn.y;
+    const levelData = await retryLevel();  // rename to levelData
+    player.x = levelData.playerSpawn.x;
+    player.y = levelData.playerSpawn.y;
+
+    // Reset player history and echo
+    player.history = [];
+    resetEcho(levelData.playerSpawn);
 
     platforms = getPlatforms();
     exit = getExit();
@@ -97,12 +109,23 @@ retryLevelBtn.addEventListener("click", async () => {
 function update() {
     if (levelCompleted) return;
 
-    updatePlayer(platforms, canvas);
+    player.groundedOnEcho = false;
+    updateEcho(platforms, canvas);
+    playerEchoCollision(player, echo);
+    updatePlayer(platforms, canvas, player.groundedOnEcho);
 
     if (checkCollision(player, exit)) {
         levelCompleted = true;
         levelMenu.style.display = "block";
     }
+
+    echo.grounded = false;
+for (let p of platforms) {
+    let prevY = echo.y;
+    resolveCollision(echo, p);
+    if (echo.y !== prevY && echo.vy >= 0) echo.grounded = true; // landed
+}
+
 
     // Future updates for other gameplay elements go here
 }
@@ -128,6 +151,9 @@ function draw() {
 
     // Draw player
     drawPlayer(ctx);
+
+    // Draw Echo
+    drawEcho(ctx);
 
     // Future draws: echoes, particles, etc.
 

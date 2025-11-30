@@ -10,6 +10,7 @@ export const player = {
     h: 68,
     vy: 0,
     grounded: false,
+    groundedOnEcho: false,
     ledgeGrabbed: false,
     ledgeX: 0,
     ledgeY: 0,
@@ -19,6 +20,9 @@ export const player = {
     walkFrame: 0,
     walkTimer: 0
 };
+
+player.history = [];
+player.maxHistory = 180; // 3 seconds at 60fps
 
 // Walking animation
 const WALK_FRAME_DELAY = 10;
@@ -40,7 +44,7 @@ playerSprites.ledge_grab.src = "assets/ledge_grab.png";
 
 let jumpCooldown = 0;
 
-export function updatePlayer(platforms, canvas) {
+export function updatePlayer(platforms, canvas, groundedOverride = false) {
     // ===== Handle ledge grabbing =====
     if (player.ledgeGrabbed) {
         player.x = player.ledgeX;
@@ -96,6 +100,9 @@ export function updatePlayer(platforms, canvas) {
     for (let p of platforms) resolveCollision(player, p);
     resolveCollisionWithBounds(player, canvas);
 
+    // Apply grounded override (e.g., standing on echo)
+    if (groundedOverride) player.grounded = true;
+
     // ===== Check for ledge grab =====
     if (!player.grounded && !player.ledgeGrabbed && player.vy > 0) {
         for (let p of platforms) {
@@ -149,6 +156,19 @@ export function updatePlayer(platforms, canvas) {
             player.walkFrame = 1 - player.walkFrame; // 0 -> 1 -> 0
         }
     }
+
+// ===== Save history frame =====
+player.history.push({
+    x: player.x,
+    y: player.y,
+    vy: player.vy,
+    vx: (isKeyDown("ArrowRight") ? 3 : isKeyDown("ArrowLeft") ? -3 : 0),
+    grounded: player.grounded,
+    state: player.state,
+    facingRight: player.facingRight,
+    justJumped: (player.state === "jump" && player.vy < 0) // detects jump start
+});
+
 }
 
 export function drawPlayer(ctx) {
