@@ -7,8 +7,8 @@ export const playerSprites = {
     ledge_grab: new Image()
 };
 
-playerSprites.idle.src  = "assets/slime_front.png";
-playerSprites.jump.src  = "assets/slime_jump.png";
-playerSprites.walkA.src = "assets/slime_walk_a.png";
-playerSprites.walkB.src = "assets/slime_walk_b.png";
-playerSprites.ledge_grab.src = "assets/ledge_grab.png";
+playerSprites.idle.src  = "js/sprites/assets/slime_front.png";
+playerSprites.jump.src  = "js/sprites/assets/slime_jump.png";
+playerSprites.walkA.src = "js/sprites/assets/slime_walk_a.png";
+playerSprites.walkB.src = "js/sprites/assets/slime_walk_b.png";
+playerSprites.ledge_grab.src = "js/sprites/assets/ledge_grab.png";
