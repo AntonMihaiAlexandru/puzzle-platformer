@@ -20,9 +20,15 @@ export async function loadLevel(levelNumber) {
         playerSpawn: currentLevelData.playerStart,
         platforms: currentLevelData.platforms,
         exit: currentLevelData.exit,
+        enemies: currentLevelData.enemies || [],
         worldWidth,
         worldHeight
     };
+}
+
+// helper to get enemies
+export function getEnemies() {
+    return currentLevelData?.enemies || [];
 }
 
 // Helpers to get parts of the current level

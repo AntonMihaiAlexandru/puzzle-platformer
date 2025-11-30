@@ -32,6 +32,16 @@
     <button id="retryLevelBtn">Retry</button>
   </div>
 
+  <!-- === Game Over Menu === -->
+<div id="GameOverMenu" style="display:none; position:absolute; top:50%; left:50%; 
+     transform:translate(-50%, -50%);
+     background-color: rgba(0,0,0,0.8); color:white; padding:20px; text-align:center;
+     border-radius:10px; flex-direction:column; gap:16px; align-items:center; z-index:20;">
+    <h2>Game Over!</h2>
+    <button id="GameOverRetryBtn">Retry</button>
+</div>
+
+
   <!-- === CANVAS-UL JOCULUI === -->
   <canvas id="game" width="800" height="480"></canvas>
   <script type="module" src="js/main.js"></script>

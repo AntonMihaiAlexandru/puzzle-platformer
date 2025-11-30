@@ -8,6 +8,7 @@ import { playSound } from "./engine/sound.js";
 import { camera, updateCamera } from "./engine/camera.js";
 import { updateEcho, drawEcho, echo, resetEcho } from "./entities/echo.js";
 import { playerEchoCollision } from "./entities/collisions.js";
+import { createEnemy, updateEnemy, drawEnemy } from "./entities/enemy.js";
 
 // ==== GLOBALS ====
 const canvas = document.getElementById("game");
@@ -20,10 +21,15 @@ const levelMenu = document.getElementById("levelMenu");
 const nextLevelBtn = document.getElementById("nextLevelBtn");
 const retryLevelBtn = document.getElementById("retryLevelBtn");
 
+const GameOverMenu = document.getElementById("GameOverMenu");
+const GameOverRetryBtn = document.getElementById("GameOverRetryBtn");
+let gameOver = false;
 let gameStarted = false;
 let currentLevel = 1;
 let levelCompleted = false;
+let currentLevelData = null;
 
+let enemies = [];
 let platforms = [];
 let exit = {};
 
@@ -34,6 +40,36 @@ function resizeCanvas() {
 }
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
+
+function initLevel(levelData) {
+
+    gameOver = false;
+    GameOverMenu.style.display = "none";
+
+    // Reset player
+    player.x = levelData.playerSpawn.x;
+    player.y = levelData.playerSpawn.y;
+    player.history = [];
+
+    // Reset echo
+    resetEcho(levelData.playerSpawn);
+
+    // Reset platforms and exit
+    platforms = levelData.platforms;
+    exit = levelData.exit;
+
+    // Reset enemies
+    enemies = [];
+    if (levelData.enemies) {
+        enemies = levelData.enemies.map(e => 
+            createEnemy(e.x, e.y, e.w || 50, e.h || 50, e.speed || 2)
+        );
+    }
+
+    // Reset level state
+    levelCompleted = false;
+}
+
 
 // ==== START GAME ====
 async function startGame() {
@@ -46,22 +82,16 @@ async function startGame() {
     // Load level and get all relevant data
     const levelData = await loadLevel(currentLevel);
 
-    player.x = levelData.playerSpawn.x;
-    player.y = levelData.playerSpawn.y;
-    player.history = [];
-    resetEcho(levelData.playerSpawn);
+    // Initialize everything (player, echo, enemies, platforms, exit)
+    initLevel(levelData);
 
+    // Update camera after initializing player
     updateCamera(player, canvas);
-    
-    platforms = levelData.platforms;
-    exit = levelData.exit;
 
-    // Set camera world size
-    camera.worldWidth = levelData.worldWidth;
-    camera.worldHeight = levelData.worldHeight;
-
+    // Start the game loop
     requestAnimationFrame(loop);
 }
+
 
 
 // ==== BUTTON EVENTS ====
@@ -76,48 +106,37 @@ document.addEventListener("keydown", e => {
 // For next level
 nextLevelBtn.addEventListener("click", async () => {
     levelMenu.style.display = "none";
-    const levelData = await nextLevel();   // rename to levelData
-    player.x = levelData.playerSpawn.x;
-    player.y = levelData.playerSpawn.y;
+    const levelData = await nextLevel();
+    initLevel(levelData);
+});
 
-    // Reset player history and echo
-    player.history = [];
-    resetEcho(levelData.playerSpawn);
-
-    platforms = getPlatforms();
-    exit = getExit();
-    levelCompleted = false;
+// For GameOver
+GameOverRetryBtn.addEventListener("click", async () => {
+    GameOverMenu.style.display = "none";
+    const levelData = await retryLevel(); // reload current level
+    initLevel(levelData);
+    gameOver = false;
 });
 
 // For retry
 retryLevelBtn.addEventListener("click", async () => {
     levelMenu.style.display = "none";
-    const levelData = await retryLevel();  // rename to levelData
-    player.x = levelData.playerSpawn.x;
-    player.y = levelData.playerSpawn.y;
-
-    // Reset player history and echo
-    player.history = [];
-    resetEcho(levelData.playerSpawn);
-
-    platforms = getPlatforms();
-    exit = getExit();
-    levelCompleted = false;
+    const levelData = await retryLevel();
+    initLevel(levelData);
+    gameOver = false;
 });
 
 // ==== GAME LOOP ====
 function update() {
-    if (levelCompleted) return;
+    if (!gameStarted || levelCompleted || gameOver) return;
 
+    // ==== Player ====
     player.groundedOnEcho = false;
-    updateEcho(platforms, canvas);
-    playerEchoCollision(player, echo);
     updatePlayer(platforms, canvas, player.groundedOnEcho);
 
-    if (checkCollision(player, exit)) {
-        levelCompleted = true;
-        levelMenu.style.display = "block";
-    }
+    // ==== Echo ====
+    updateEcho(platforms, canvas);
+    playerEchoCollision(player, echo);
 
     echo.grounded = false;
 for (let p of platforms) {
@@ -126,36 +145,63 @@ for (let p of platforms) {
     if (echo.y !== prevY && echo.vy >= 0) echo.grounded = true; // landed
 }
 
+//==== Enemies ====
+for (let enemy of enemies) {
+    updateEnemy(enemy, platforms, canvas);
 
-    // Future updates for other gameplay elements go here
+    // Simple player collision
+    if (player.x < enemy.x + enemy.w &&
+        player.x + player.w > enemy.x &&
+        player.y < enemy.y + enemy.h &&
+        player.y + player.h > enemy.y) {
+        
+        // Trigger Game Over
+        gameOver = true;
+        GameOverMenu.style.display = "flex"; // show overlay
+        break; // stop checking other enemies
+    }
 }
 
-updateCamera();
+// ==== Exit ====
+    if (checkCollision(player, exit)) {
+        levelCompleted = true;
+        levelMenu.style.display = "block";
+    }
+
+    // Future gameplay elements
+}
 
 function draw() {
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
 
+    // Apply camera transformations
     ctx.scale(camera.zoom, camera.zoom);
     ctx.translate(-camera.x, -camera.y);
 
-    // Draw platforms
+    // ===== Platforms =====
     ctx.fillStyle = "gray";
-    for (let p of platforms) ctx.fillRect(p.x, p.y, p.w, p.h);
+    for (let p of platforms) {
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+    }
 
-    // Draw exit
+    // ===== Exit =====
     ctx.fillStyle = "gold";
     ctx.fillRect(exit.x, exit.y, exit.w, exit.h);
 
-    // Draw player
+    // ===== Player =====
     drawPlayer(ctx);
 
-    // Draw Echo
+    // ===== Enemies =====
+    for (let enemy of enemies) {
+        drawEnemy(ctx, enemy);
+    }
+
+    // ===== Echo =====
     drawEcho(ctx);
 
-    // Future draws: echoes, particles, etc.
+    // ===== Future visual elements =====
 
     ctx.restore();
 }

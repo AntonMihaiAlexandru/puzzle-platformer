@@ -38,6 +38,25 @@ export function resolveCollision(player, platform) {
   }
 }
 
+export function resolveCollisionVertical(entity, platform) {
+    // Check horizontal overlap first
+    const overlapX = entity.x + entity.w > platform.x && entity.x < platform.x + platform.w;
+    const overlapY = entity.y + entity.h > platform.y && entity.y < platform.y + platform.h;
+
+    if (overlapX && overlapY) {
+        // Only handle collisions from the top of the platform
+        const entityBottom = entity.y + entity.h;
+        const platformTop = platform.y;
+
+        if (entityBottom > platformTop && entity.y < platformTop) {
+            // Correct entity to sit on top
+            entity.y = platformTop - entity.h;
+            entity.vy = 0;
+            entity.grounded = true;
+        }
+    }
+}
+
 // Repara coliziunile cu marginile jocului
 export function resolveCollisionWithBounds(player, canvas) {
   if (player.x < 0) player.x = 0;
