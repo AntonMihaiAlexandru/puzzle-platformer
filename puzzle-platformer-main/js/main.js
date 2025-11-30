@@ -29,6 +29,11 @@ let currentLevel = 1;
 let levelCompleted = false;
 let currentLevelData = null;
 
+let timer = 0;              // total elapsed time
+let lastTime = performance.now();
+let timerPaused = true;     // true = not running
+
+
 let enemies = [];
 let platforms = [];
 let exit = {};
@@ -77,6 +82,9 @@ async function startGame() {
     gameStarted = true;
     startMenu.style.display = "none";
 
+    timerPaused = false; // start running
+    lastTime = performance.now();
+
     playSound("bg"); // background music
 
     // Load level and get all relevant data
@@ -106,8 +114,11 @@ document.addEventListener("keydown", e => {
 // For next level
 nextLevelBtn.addEventListener("click", async () => {
     levelMenu.style.display = "none";
+    currentLevel++;
     const levelData = await nextLevel();
     initLevel(levelData);
+    timerPaused = false;         // continue timer
+    lastTime = performance.now();
 });
 
 // For GameOver
@@ -115,6 +126,11 @@ GameOverRetryBtn.addEventListener("click", async () => {
     GameOverMenu.style.display = "none";
     const levelData = await retryLevel(); // reload current level
     initLevel(levelData);
+    gameOver = false;
+    // If retrying and level is NOT 1 → do NOT reset timer
+    if (currentLevel === 1) timer = 0;
+    timerPaused = false;
+    lastTime = performance.now();
     gameOver = false;
 });
 
@@ -124,10 +140,25 @@ retryLevelBtn.addEventListener("click", async () => {
     const levelData = await retryLevel();
     initLevel(levelData);
     gameOver = false;
+    if (currentLevel === 1) timer = 0; // Reset only at level 1
+    timerPaused = false; 
+    lastTime = performance.now();
 });
 
 // ==== GAME LOOP ====
 function update() {
+
+    // Timer only runs during gameplay
+    if (!timerPaused && !gameOver && !levelCompleted) {
+        let now = performance.now();
+        timer += (now - lastTime) / 1000;
+        lastTime = now;
+    } else {
+        lastTime = performance.now(); // prevent time jump after unpause
+    }
+
+    if (gameOver || levelCompleted) return;
+    
     if (!gameStarted || levelCompleted || gameOver) return;
 
     // ==== Player ====
@@ -165,11 +196,21 @@ for (let enemy of enemies) {
 // ==== Exit ====
     if (checkCollision(player, exit)) {
         levelCompleted = true;
+        timerPaused = true;
         levelMenu.style.display = "block";
     }
 
     // Future gameplay elements
 }
+
+function formatTime(t) {
+    let minutes = Math.floor(t / 60);
+    let seconds = Math.floor(t % 60);
+    let ms = Math.floor((t % 1) * 100); // two decimals
+
+    return `${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}.${String(ms).padStart(2,"0")}`;
+}
+
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -200,6 +241,18 @@ function draw() {
 
     // ===== Echo =====
     drawEcho(ctx);
+
+// ===== TIMER DISPLAY =====
+ctx.save();
+ctx.resetTransform(); // important — ignore camera movement
+
+ctx.font = "24px Arial";
+ctx.fillStyle = "white";
+ctx.textAlign = "right";
+
+ctx.fillText(formatTime(timer), canvas.width - 20, canvas.height - 20);
+ctx.restore();
+
 
     // ===== Future visual elements =====
 
