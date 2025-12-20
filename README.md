@@ -102,19 +102,19 @@ No backend or server-side processing is required.
 https://puzzle-frontend-jqsf.onrender.com/
 
 ## Project Structure
-graphql
-Copiază codul
+
+```text
 puzzle-platformer/
-├── js/
-│   ├── engine/        # Core game engine logic
-│   ├── entities/      # Player, enemies, interactive objects
-│   ├── levels/        # Level definitions (JSON)
-│   ├── sprites/       # Sprite handling
-│   └── main.js
-├── sounds/            # Audio assets
-├── index.html
-├── style.css
-└── README.md
-Project Status
-This project is under active development.
-The current version demonstrates all core gameplay and puzzle mechanics.
+├── game-frontend/
+│   ├── js/
+│   │   ├── engine/        # Core game engine logic
+│   │   ├── entities/      # Player, enemies, interactive objects
+│   │   ├── levels/        # Level definitions (JSON)
+│   │   ├── sprites/       # Sprite handling
+│   │   └── main.js
+│   ├── sounds/            # Audio assets
+│   ├── index.html
+│   └── style.css
+├── game-backend/           # (Optional backend / leaderboard)
+├── README.md
+└── .gitignore
