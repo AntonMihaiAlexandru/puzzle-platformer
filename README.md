@@ -54,7 +54,7 @@ git clone https://github.com/AntonMihaiAlexandru/puzzle-platformer.git
 Open the project folder and start a local server
 (required because ES modules cannot be loaded directly from the file system).
 
-VS Code Live Server
+2. VS Code Live Server
 Install Live Server extension
 
 Right click index.html → Open with Live Server
