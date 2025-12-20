@@ -49,7 +49,7 @@ To run the project locally, you only need:
 ## Running the Application Locally
 
 1. Clone the repository:
-```bash
+
 git clone https://github.com/AntonMihaiAlexandru/puzzle-platformer.git
 Open the project folder and start a local server
 (required because ES modules cannot be loaded directly from the file system).
