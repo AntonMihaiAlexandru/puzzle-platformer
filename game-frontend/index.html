@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Puzzle Platformer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- === MENIU DE START === -->
+  <div id="startMenu" style="
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,0.75); color:#fff; text-align:center; z-index:10;
+    flex-direction:column; gap:16px; font-family: system-ui, Arial, sans-serif;">
+    
+    <h1 style="margin:0; font-size:42px;">Puzzle Platformer</h1>
+    <p style="margin:0 0 8px;">Sari cu <strong>Space</strong>, mișcare cu <strong>← →</strong></p>
+    
+    <div style="display:flex; gap:12px;">
+      <button id="startBtn" style="padding:10px 18px; border-radius:8px; border:0; cursor:pointer;">Start</button>
+      <button id="fullscreenBtn" style="padding:10px 18px; border-radius:8px; border:0; cursor:pointer;">Fullscreen</button>
+    </div>
+
+    <small style="opacity:.8;">Poți apăsa și <strong>Space</strong> sau <strong>Enter</strong> pentru a începe</small>
+  </div>
+
+  <!-- === MENIU DE COMPLETARE A NIVELULUI === -->
+  <div id="levelMenu" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
+                          background-color: rgba(0,0,0,0.8); color:white; padding:20px; text-align:center;
+                          border-radius:10px;">
+    <h2>Level Complete!</h2>
+    <button id="nextLevelBtn">Next Level</button>
+    <button id="retryLevelBtn">Retry</button>
+  </div>
+
+  <!-- === Game Over Menu === -->
+<div id="GameOverMenu" style="display:none; position:absolute; top:50%; left:50%; 
+     transform:translate(-50%, -50%);
+     background-color: rgba(0,0,0,0.8); color:white; padding:20px; text-align:center;
+     border-radius:10px; flex-direction:column; gap:16px; align-items:center; z-index:20;">
+    <h2>Game Over!</h2>
+    <button id="GameOverRetryBtn">Retry</button>
+</div>
+
+<div id="gameEndMenu" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(20,20,20,0.95); color:white; padding:40px; border:3px solid #7289da; text-align:center; z-index:2000; border-radius: 10px;">
+    <h1>GAME COMPLETE!</h1>
+    <p>Enter your name for the hall of fame:</p>
+    <input type="text" id="playerNameInput" maxlength="12" style="padding:10px; font-size:18px; width:200px; text-align:center;">
+    <br><br>
+    <button id="submitScoreBtn" style="padding:10px 20px; cursor:pointer; background:#7289da; color:white; border:none; border-radius:5px;">Submit Score</button>
+    
+    <div id="finalLeaderboard" style="margin-top:20px; text-align:left; display:none;">
+        <h3 style="text-align:center;">Global Top 10</h3>
+        <ul id="finalScoreList" style="list-style: none; padding: 0;"></ul>
+        <button onclick="location.reload()" style="width:100%; margin-top:10px;">Play Again</button>
+    </div>
+</div>
+
+  <!-- === CANVAS-UL JOCULUI === -->
+  <canvas id="game" width="800" height="480"></canvas>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

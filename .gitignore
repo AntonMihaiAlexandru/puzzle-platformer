@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Environment Variables (Crucial for security!)
+.env
+
+# OS Metadata
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
